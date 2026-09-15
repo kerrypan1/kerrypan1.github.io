@@ -20,35 +20,39 @@
         <section>
             <h2>Overview</h2>
             <p>
-                Each input is a glass plate with three exposures stacked top to
-                bottom: blue, green, then red. I split the image into three equal
-                parts, align G and R to B with (x, y) translations, and stack them
-                into an RGB image.
+                Each input is a glass plate with three exposures stacked from top
+                to bottom in BGR order. I split the image into three equal parts,
+                align green and red to blue with (x, y) translations, and stack
+                the channels into an RGB image. Images are converted to floats
+                first, and I apply shifts with <code>np.roll</code>.
             </p>
             <p>
-                Everything is converted to floats first, and I shift with
-                <code>np.roll</code>. The green and red displacements are listed
-                under each result.
+                I tried both MSE and NCC. MSE looked better on the small jpgs, so
+                I kept it for single-scale alignment; the pyramid results use NCC.
+                The green and red displacements are listed under each image.
             </p>
         </section>
 
         <section>
             <h2>Single-Scale Alignment (L2 / MSE)</h2>
             <p>
-                For the low-res jpgs I search every displacement in [-15, 15].
-                At each (x, y) I roll the channel and score how well it matches blue.
+                For the low-res jpgs I search every displacement in [-15, 15],
+                rolling the channel at each (x, y) and scoring how well it matches
+                blue.
             </p>
             <p>
-                I used MSE, the mean of (image1 - image2)<sup>2</sup>. That's
-                proportional to the L2 / Euclidean distance from the spec,
-                <code>sqrt(sum(sum((image1-image2).^2)))</code>. MSE just skips the
-                square root and divides by the number of pixels. Neither of those
-                changes which shift wins, so minimizing MSE is the same as minimizing L2.
+                I used MSE, the mean of (image1 − image2)<sup>2</sup>, which is
+                proportional to the L2 / Euclidean distance in the spec,
+                <code>sqrt(sum(sum((image1-image2).^2)))</code>. MSE just drops the
+                square root and divides by the number of pixels, so the displacement
+                that minimizes MSE is the same one that minimizes L2. I also tried
+                NCC on these images, but MSE looked better, so I kept it.
             </p>
             <p>
-                I score on interior pixels only, cropping by the window size, because
-                <code>np.roll</code> wraps pixels around and that would throw off the
-                error. This was enough for cathedral, monastery, and tobolsk.
+                Scores are computed on interior pixels only. I crop by the window
+                size because <code>np.roll</code> wraps pixels around the edges,
+                which would otherwise throw off the error. That was enough to align
+                cathedral, monastery, and tobolsk.
             </p>
             <div class="gallery three">
                 <figure>
@@ -67,64 +71,70 @@
         </section>
 
         <section>
-            <h2>Multi-Scale Pyramid (L2 / MSE)</h2>
+            <h2>Multi-Scale Pyramid (NCC)</h2>
             <p>
                 On the full-size tifs the true offset is often much larger than 15
-                pixels, and searching a huge window at full resolution is too slow.
-                I used an image pyramid instead: run the same L2/MSE search on a
-                smaller version first, then refine as you go back up to full size.
+                pixels, and searching a wide window at full resolution is too slow,
+                so I used an image pyramid: run the search on a smaller version
+                first, then refine as the image is brought back up to full size.
+            </p>
+            <p>
+                Unlike single-scale, the pyramid uses NCC. After cropping, I
+                mean-subtract each channel, normalize, and take their dot product
+                (higher is a better match). That generally aligned the large images
+                better than L2, which is why I switched.
             </p>
             <p>
                 I downsample by 2 with anti-aliasing until both dimensions are under
-                256, search [-15, 15] there, then recurse back up. At each finer
-                level I take 2× the coarse offset and only search ±5 around it.
-                Still L2/MSE on pixel values, still ignoring borders. The offsets
-                below are at full resolution.
+                256, search [-15, 15] at that coarsest scale, then recurse back up.
+                At each finer level I take twice the coarse offset and search only
+                ±2 around it, still ignoring borders. The offsets below are at full
+                resolution.
             </p>
             <div class="gallery two">
                 <figure>
                     <img src="./media/church.jpg" alt="Church">
-                    <figcaption>Church — G: (-4, 23), R: (-5, 58)</figcaption>
+                    <figcaption>Church — G: (4, 25), R: (-4, 58)</figcaption>
                 </figure>
                 <figure>
                     <img src="./media/emir.jpg" alt="Emir">
-                    <figcaption>Emir — G: (9, 35), R: (17, 112)</figcaption>
+                    <figcaption>Emir — G: (24, 49), R: (-205, 141)</figcaption>
                 </figure>
                 <figure>
                     <img src="./media/harvesters.jpg" alt="Harvesters">
-                    <figcaption>Harvesters — G: (10, 58), R: (8, 126)</figcaption>
+                    <figcaption>Harvesters — G: (17, 60), R: (13, 124)</figcaption>
                 </figure>
                 <figure>
                     <img src="./media/icon.jpg" alt="Icon">
-                    <figcaption>Icon — G: (16, 41), R: (22, 90)</figcaption>
+                    <figcaption>Icon — G: (17, 41), R: (23, 89)</figcaption>
                 </figure>
                 <figure>
                     <img src="./media/ilemselga.jpg" alt="Ilemselga">
-                    <figcaption>Ilemselga — G: (-4, 39), R: (-7, 129)</figcaption>
+                    <figcaption>Ilemselga — G: (7, 40), R: (11, 130)</figcaption>
                 </figure>
                 <figure>
                     <img src="./media/melons.jpg" alt="Melons">
-                    <figcaption>Melons — G: (4, 82), R: (8, 179)</figcaption>
+                    <figcaption>Melons — G: (11, 82), R: (13, 178)</figcaption>
                 </figure>
                 <figure>
                     <img src="./media/religous_painting.jpg" alt="Religious painting">
-                    <figcaption>Religious Painting — G: (3, 25), R: (7, 68)</figcaption>
+                    <figcaption>Religious Painting — G: (3, 28), R: (7, 68)</figcaption>
                 </figure>
                 <figure>
                     <img src="./media/self_portrait.jpg" alt="Self portrait">
-                    <figcaption>Self Portrait — G: (-1, 77), R: (-2, 174)</figcaption>
+                    <figcaption>Self Portrait — G: (29, 79), R: (37, 176)</figcaption>
                 </figure>
                 <figure>
                     <img src="./media/siren.jpg" alt="Siren">
-                    <figcaption>Siren — G: (-7, 48), R: (-21, 98)</figcaption>
+                    <figcaption>Siren — G: (-6, 49), R: (-25, 96)</figcaption>
                 </figure>
                 <figure>
                     <img src="./media/three_generations.jpg" alt="Three generations">
-                    <figcaption>Three Generations — G: (5, 52), R: (7, 111)</figcaption>
+                    <figcaption>Three Generations — G: (14, 53), R: (11, 112)</figcaption>
                 </figure>
                 <figure>
                     <img src="./media/wharf.jpg" alt="Wharf">
-                    <figcaption>Wharf — G: (-7, 15), R: (-17, 83)</figcaption>
+                    <figcaption>Wharf — G: (-7, 15), R: (-16, 83)</figcaption>
                 </figure>
             </div>
         </section>
@@ -132,22 +142,23 @@
         <section>
             <h2>Images of My Choosing</h2>
             <p>
-                I also ran the same pyramid alignment on three extra images from the
+                I ran the same NCC pyramid on three additional plates from the
                 Prokudin-Gorskii collection.
             </p>
             <div class="gallery three">
-                <figure><img src="./media/img1.jpg" alt="Chosen image 1"><figcaption>Image 1 — G: (-12, 41), R: (-28, 93)</figcaption></figure>
-                <figure><img src="./media/img2.jpg" alt="Chosen image 2"><figcaption>Image 2 — G: (1, 51), R: (-7, 104)</figcaption></figure>
-                <figure><img src="./media/img3.jpg" alt="Chosen image 3"><figcaption>Image 3 — G: (-11, 33), R: (-26, 140)</figcaption></figure>
+                <figure><img src="./media/img1.jpg" alt="Chosen image 1"><figcaption>Image 1 — G: (-16, 41), R: (-29, 93)</figcaption></figure>
+                <figure><img src="./media/img2.jpg" alt="Chosen image 2"><figcaption>Image 2 — G: (3, 51), R: (-6, 104)</figcaption></figure>
+                <figure><img src="./media/img3.jpg" alt="Chosen image 3"><figcaption>Image 3 — G: (-11, 33), R: (-27, 140)</figcaption></figure>
             </div>
         </section>
 
         <section>
             <h2>Failures and Lessons</h2>
             <p>
-                Emir didn't align well. The robe is very bright in blue and dark in
-                red, so L2 on raw pixels thinks the channels don't match even when
-                the structure lines up. The spec calls this out. Using edges or
+                NCC helped on most of the large images, but it made Emir much worse
+                (red offset (−205, 141)). The robe is very bright in blue and dark
+                in red, so even after mean-subtraction the two channels still don't
+                look alike. The assignment flags this case; aligning on edges or
                 gradients instead of brightness would probably help.
             </p>
         </section>
