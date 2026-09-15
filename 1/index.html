@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project 1 — Images of the Russian Empire</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="./project.css">
+</head>
+<body>
+    <nav><a href="../index.html">← Back to portfolio</a></nav>
+
+    <header>
+        <p>CS 180 · Project 1</p>
+        <h1>Images of the Russian Empire</h1>
+        <p>Colorizing the Prokudin-Gorskii photo collection</p>
+    </header>
+
+    <main>
+        <section>
+            <h2>Overview</h2>
+            <p>
+                Each input is a glass plate with three exposures stacked top to
+                bottom: blue, green, then red. I split the image into three equal
+                parts, align G and R to B with (x, y) translations, and stack them
+                into an RGB image.
+            </p>
+            <p>
+                Everything is converted to floats first, and I shift with
+                <code>np.roll</code>. The green and red displacements are listed
+                under each result.
+            </p>
+        </section>
+
+        <section>
+            <h2>Single-Scale Alignment (L2 / MSE)</h2>
+            <p>
+                For the low-res jpgs I search every displacement in [-15, 15].
+                At each (x, y) I roll the channel and score how well it matches blue.
+            </p>
+            <p>
+                I used MSE, the mean of (image1 - image2)<sup>2</sup>. That's
+                proportional to the L2 / Euclidean distance from the spec,
+                <code>sqrt(sum(sum((image1-image2).^2)))</code>. MSE just skips the
+                square root and divides by the number of pixels. Neither of those
+                changes which shift wins, so minimizing MSE is the same as minimizing L2.
+            </p>
+            <p>
+                I score on interior pixels only, cropping by the window size, because
+                <code>np.roll</code> wraps pixels around and that would throw off the
+                error. This was enough for cathedral, monastery, and tobolsk.
+            </p>
+            <div class="gallery three">
+                <figure>
+                    <img src="./media/cathedral.jpg" alt="Cathedral">
+                    <figcaption>Cathedral — G: (2, 5), R: (3, 12)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./media/monastery.jpg" alt="Monastery">
+                    <figcaption>Monastery — G: (2, -3), R: (2, 3)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./media/tobolsk.jpg" alt="Tobolsk">
+                    <figcaption>Tobolsk — G: (2, 3), R: (3, 6)</figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section>
+            <h2>Multi-Scale Pyramid (L2 / MSE)</h2>
+            <p>
+                On the full-size tifs the true offset is often much larger than 15
+                pixels, and searching a huge window at full resolution is too slow.
+                I used an image pyramid instead: run the same L2/MSE search on a
+                smaller version first, then refine as you go back up to full size.
+            </p>
+            <p>
+                I downsample by 2 with anti-aliasing until both dimensions are under
+                256, search [-15, 15] there, then recurse back up. At each finer
+                level I take 2× the coarse offset and only search ±5 around it.
+                Still L2/MSE on pixel values, still ignoring borders. The offsets
+                below are at full resolution.
+            </p>
+            <div class="gallery two">
+                <figure>
+                    <img src="./media/church.jpg" alt="Church">
+                    <figcaption>Church — G: (-4, 23), R: (-5, 58)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./media/emir.jpg" alt="Emir">
+                    <figcaption>Emir — G: (9, 35), R: (17, 112)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./media/harvesters.jpg" alt="Harvesters">
+                    <figcaption>Harvesters — G: (10, 58), R: (8, 126)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./media/icon.jpg" alt="Icon">
+                    <figcaption>Icon — G: (16, 41), R: (22, 90)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./media/ilemselga.jpg" alt="Ilemselga">
+                    <figcaption>Ilemselga — G: (-4, 39), R: (-7, 129)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./media/melons.jpg" alt="Melons">
+                    <figcaption>Melons — G: (4, 82), R: (8, 179)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./media/religous_painting.jpg" alt="Religious painting">
+                    <figcaption>Religious Painting — G: (3, 25), R: (7, 68)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./media/self_portrait.jpg" alt="Self portrait">
+                    <figcaption>Self Portrait — G: (-1, 77), R: (-2, 174)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./media/siren.jpg" alt="Siren">
+                    <figcaption>Siren — G: (-7, 48), R: (-21, 98)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./media/three_generations.jpg" alt="Three generations">
+                    <figcaption>Three Generations — G: (5, 52), R: (7, 111)</figcaption>
+                </figure>
+                <figure>
+                    <img src="./media/wharf.jpg" alt="Wharf">
+                    <figcaption>Wharf — G: (-7, 15), R: (-17, 83)</figcaption>
+                </figure>
+            </div>
+        </section>
+
+        <section>
+            <h2>Images of My Choosing</h2>
+            <p>
+                I also ran the same pyramid alignment on three extra images from the
+                Prokudin-Gorskii collection.
+            </p>
+            <div class="gallery three">
+                <figure><img src="./media/img1.jpg" alt="Chosen image 1"><figcaption>Image 1 — G: (-12, 41), R: (-28, 93)</figcaption></figure>
+                <figure><img src="./media/img2.jpg" alt="Chosen image 2"><figcaption>Image 2 — G: (1, 51), R: (-7, 104)</figcaption></figure>
+                <figure><img src="./media/img3.jpg" alt="Chosen image 3"><figcaption>Image 3 — G: (-11, 33), R: (-26, 140)</figcaption></figure>
+            </div>
+        </section>
+
+        <section>
+            <h2>Failures and Lessons</h2>
+            <p>
+                Emir didn't align well. The robe is very bright in blue and dark in
+                red, so L2 on raw pixels thinks the channels don't match even when
+                the structure lines up. The spec calls this out. Using edges or
+                gradients instead of brightness would probably help.
+            </p>
+        </section>
+    </main>
+
+    <footer>CS 180 · Fall 2026</footer>
+</body>
+</html>
