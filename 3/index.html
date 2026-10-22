@@ -31,18 +31,18 @@
 
         <section class="part-title" id="part-a">
             <h2>Part A: Exploring Flow Models</h2>
-            <p>Model: PixNerd-XXL-P16-T2I at 512×512. Default prompt: “a high quality photo.” Euler step size: 0.02. All guided runs use w = 7 and an empty unconditional prompt.</p>
+            <p>I used PixNerd with “a high quality photo” as the default prompt. Sampling uses a step size of 0.02, with w = 7 for the guided results.</p>
         </section>
 
         <section id="a1-1">
             <h2>1.1: Constructing Noisy Inputs</h2>
-            <p>I used this gorilla photo and one Gaussian noise tensor (seed 180), reused across all three times and the denoising comparisons.</p>
+            <p>I used this gorilla photo for the denoising experiments, keeping the same noise so the results are easier to compare.</p>
             <figure><a href="media/noisy-inputs.png"><img src="media/noisy-inputs.png" alt="Original gorilla and noisy versions at t = 0.25, 0.50, and 0.75" width="1593" height="411"></a><figcaption>More of the original image remains as t increases.</figcaption></figure>
         </section>
 
         <section id="a1-2">
             <h2>1.2: Classical Denoising</h2>
-            <p>After rescaling by 1/t, I tried blur strengths σ = 1, 2, 4, 8, 16 and chose the lowest MSE against the original. The fur loses detail, especially at t = 0.25.</p>
+            <p>I tried a few blur strengths and kept the one with the lowest error against the original. It gets rid of some noise, but takes a lot of the fur detail with it.</p>
             <div class="stack">
                 <figure><a href="media/blur-025.png"><img src="media/blur-025.png" alt="Noisy input and best Gaussian blur at t = 0.25" width="793" height="411"></a><figcaption>t = 0.25</figcaption></figure>
                 <figure><a href="media/blur-050.png"><img src="media/blur-050.png" alt="Noisy input and best Gaussian blur at t = 0.50" width="793" height="411"></a><figcaption>t = 0.50</figcaption></figure>
@@ -52,7 +52,7 @@
 
         <section id="a1-3">
             <h2>1.3: One-Step Denoising</h2>
-            <p>One velocity prediction recovers the face much better than Gaussian blur, though the fur is still smoothed out at lower t.</p>
+            <p>The face comes back much more clearly than with blur. The fur still looks a little too smooth, especially in the noisier example.</p>
             <div class="stack">
                 <figure><a href="media/one-step-025.png"><img src="media/one-step-025.png" alt="Original, noisy input, and one-step estimate at t = 0.25" width="1193" height="411"></a><figcaption>t = 0.25</figcaption></figure>
                 <figure><a href="media/one-step-050.png"><img src="media/one-step-050.png" alt="Original, noisy input, and one-step estimate at t = 0.50" width="1193" height="411"></a><figcaption>t = 0.50</figcaption></figure>
@@ -62,7 +62,7 @@
 
         <section id="a1-4">
             <h2>1.4: Visualizing Velocity</h2>
-            <p>The predicted and true updates share one symmetric scale, with zero at middle gray. Error is RGB RMS before clipping, on a shared linear scale. Much of the visible error follows the face and fur details.</p>
+            <p>The error is easiest to see around the face and fur. I kept the display scales the same across all three times so the heatmaps can be compared.</p>
             <figure class="original"><img src="media/original.png" alt="Original gorilla photograph" width="512" height="512"><figcaption>Original</figcaption></figure>
             <div class="stack">
                 <figure><a href="media/velocity-025.png"><img src="media/velocity-025.png" alt="Noisy input, predicted update, true update, and RGB RMS error at t = 0.25" width="1558" height="411"></a><figcaption>t = 0.25</figcaption></figure>
@@ -73,7 +73,7 @@
 
         <section id="a1-5">
             <h2>1.5: Iterative Denoising</h2>
-            <p>I took 25 Euler steps from the saved t = 0.50 input. Below are the initial state and every fifth update. Constant-velocity checks passed for 50 full steps, 25 half-path steps, and a shortened final step from t = 0.93.</p>
+            <p>Starting halfway through, the gorilla gradually comes back over 25 steps. I also checked the sampler with a constant velocity, including a case where the last step had to be shortened.</p>
             <div class="gallery three">
                 <figure><img src="media/euler-0.png" alt="Euler initial state at t = 0.50" width="400" height="400"><figcaption>Initial · t = 0.50</figcaption></figure>
                 <figure><img src="media/euler-5.png" alt="Euler state after 5 updates at t = 0.60" width="400" height="400"><figcaption>5 updates · t = 0.60</figcaption></figure>
@@ -83,25 +83,25 @@
                 <figure><img src="media/euler-25.png" alt="Euler final state after 25 updates at t = 1.00" width="400" height="400"><figcaption>25 updates · t = 1.00</figcaption></figure>
             </div>
             <h3>Comparing the methods</h3>
-            <p>On the same noisy input, Euler brings back sharper fur, but one-step denoising stays closer to the original by MSE: blur 0.01915, one step 0.01173, Euler 0.01482. Sharper texture does not necessarily mean a more accurate reconstruction.</p>
+            <p>Euler gives the fur more texture, while the one-step result looks smoother. Interestingly, the one-step result has the lowest MSE, even though Euler looks sharper.</p>
             <figure><a href="media/denoising-comparison.png"><img src="media/denoising-comparison.png" alt="Original gorilla compared with Gaussian blur, one-step denoising, and Euler denoising" width="1593" height="411"></a><figcaption>Original / Gaussian blur / one step / Euler</figcaption></figure>
         </section>
 
         <section id="a1-6">
             <h2>1.6: Generating Images from Noise</h2>
-            <p>With “a high quality photo,” all five samples are human portraits, even though the prompt never mentions people. This suggests a bias toward portraits for this prompt, at least across these seeds. Some faces have missing features or distorted proportions.</p>
+            <p>All five results from “a high quality photo” turned out to be portraits, even though I never asked for people. The model seems to lean toward faces with this prompt. A few look fairly normal, while others have missing features or strange proportions.</p>
             <figure><a href="media/conditional-samples.png"><img src="media/conditional-samples.png" alt="Five conditional samples using seeds 180 through 184" width="1602" height="811"></a><figcaption>“a high quality photo” · no extra guidance</figcaption></figure>
         </section>
 
         <section id="a2-1">
             <h2>2.1: Classifier-Free Guidance</h2>
-            <p>Using the same five noise tensors, CFG at w = 7 gives sharper faces and fixes many of the missing or distorted features. The results fit “a high quality photo” better, although that prompt is too broad to judge subject alignment. They also look more alike, with smooth skin, dark backgrounds, and studio-style lighting, so the improvement comes with less visual variety. The w = 0 check matched ordinary conditional sampling.</p>
+            <p>With CFG, the same starting noise gives much cleaner faces. The results look more like finished photos, which fits the prompt better. They also start to look alike, with similar lighting and very smooth skin. So the quality improves, but there is less variety than without guidance.</p>
             <figure><a href="media/cfg-samples.png"><img src="media/cfg-samples.png" alt="Five classifier-free guided samples with seeds 180 through 184 and w = 7" width="1602" height="811"></a><figcaption>“a high quality photo” · w = 7 · h = 0.02</figcaption></figure>
         </section>
 
         <section id="a3-1">
             <h2>3.1: Image-to-Image Editing</h2>
-            <p>Each sweep shows the original and edits starting at t = 0.02, 0.04, 0.06, 0.10, 0.14, 0.25, 0.50, using the default photo prompt. At low t, even the gorilla and street turn into people or unrelated objects; by t = 0.50, both closely resemble their inputs.</p>
+            <p>At the noisier starting points, the gorilla and street turn into people or completely unrelated objects. With less noise, more of the original comes through.</p>
             <h3>Campanile and two test images</h3>
             <figure><a href="media/edit-campanile.png"><img src="media/edit-campanile.png" alt="Campanile original and all seven image-to-image edits" width="1593" height="811"></a><figcaption>Campanile: the tower's outline survives early, while the clock and arches return at higher t.</figcaption></figure>
             <figure><a href="media/edit-gorilla.png"><img src="media/edit-gorilla.png" alt="Gorilla original and all seven image-to-image edits" width="1593" height="811"></a><figcaption>Gorilla</figcaption></figure>
@@ -125,14 +125,14 @@
 
         <section id="a3-3">
             <h2>3.3: Visual Anagrams</h2>
-            <p>I averaged guided velocities for the upright and rotated views. Left is upright; right is the same result rotated 180°. Seeds: 180 and 181.</p>
+            <p>Each pair shows the same image upright and upside down. The old man's face becomes the fire, and the snowy village turns into a horse.</p>
             <figure><a href="media/anagram-man.png"><img src="media/anagram-man.png" alt="Visual anagram: an old man upright and people around a campfire rotated 180 degrees" width="793" height="411"></a><figcaption>“an oil painting of an old man” / “an oil painting of people around a campfire”</figcaption></figure>
             <figure><a href="media/anagram-village.png"><img src="media/anagram-village.png" alt="Visual anagram: a snowy mountain village upright and a horse rotated 180 degrees" width="793" height="411"></a><figcaption>“a lithograph of a snowy mountain village” / “a lithograph of a horse”</figcaption></figure>
         </section>
 
         <section id="a3-4">
             <h2>3.4: Hybrid Images</h2>
-            <p>I combined low-frequency velocity from the distant prompt with high-frequency velocity from the close prompt, using σ = 16 and a 265×265 Gaussian kernel. Each result is shown at 512×512 and 64×64. Seeds: 180 and 181. The skull reads more clearly at a distance; the cat is weaker, with ears suggested by the treetops.</p>
+            <p>The smaller views help bring out the distant subject. The skull works better here; the cat is harder to make out, though the treetops suggest its ears.</p>
             <div class="hybrid">
                 <figure><a href="media/hybrid-skull.png"><img src="media/hybrid-skull.png" alt="Waterfall and skull hybrid shown at full size" width="512" height="512"></a><figcaption>Near: “a lithograph of a waterfall”</figcaption></figure>
                 <figure class="distant"><img src="media/hybrid-skull-small.png" width="64" height="64" alt="The same hybrid at 64 pixels, revealing a skull"><figcaption>Far: “a lithograph of a skull”</figcaption></figure>
@@ -145,12 +145,12 @@
 
         <section class="part-title" id="part-b">
             <h2>Part B: Flow Matching from Scratch</h2>
-            <p>Training uses the 60,000 MNIST training images, shuffled each epoch, with fresh noise per batch. Denoiser evaluations use the separate test set. Pixels are in [0, 1].</p>
+            <p>I started with single-step denoising, then trained models that could generate digits from noise. Training uses the MNIST training set, and the denoising comparisons use test images.</p>
         </section>
 
         <section id="b1-1">
             <h2>1.1: Implementing the UNet</h2>
-            <p>I implemented the specified convolutional UNet with batch normalization, GELU, and skip connections. Hidden width is 128 for denoising and 64 for flow matching.</p>
+            <p>I followed the given UNet architecture, using a hidden width of 128 for denoising and 64 for flow matching.</p>
         </section>
 
         <section id="b1-2">
@@ -161,7 +161,7 @@
 
         <section id="b1-2-1">
             <h2>1.2.1: Training a Denoiser</h2>
-            <p>Five epochs, σ = 0.5, batch size 256, Adam at 10<sup>−4</sup>, and MSE loss. Most digits are already readable after one epoch; the fifth-epoch outputs have cleaner strokes. Rows are clean / noisy / denoised, with the same test inputs at both checkpoints.</p>
+            <p>Most digits are already readable after one epoch, and the strokes look cleaner after five. The rows show clean, noisy, and denoised images, using the same test inputs for both.</p>
             <figure class="loss"><a href="media/b_1.2.1_loss.png"><img src="media/b_1.2.1_loss.png" alt="Single-step denoiser training loss over five epochs" width="788" height="290"></a><figcaption>Training loss</figcaption></figure>
             <figure><a href="media/b_1.2.1_ep1.png"><img src="media/b_1.2.1_ep1.png" alt="Test-set denoising at sigma 0.5 after epoch 1" width="980" height="334"></a><figcaption>Epoch 1</figcaption></figure>
             <figure><a href="media/b_1.2.1_ep5.png"><img src="media/b_1.2.1_ep5.png" alt="Test-set denoising at sigma 0.5 after epoch 5" width="980" height="334"></a><figcaption>Epoch 5</figcaption></figure>
@@ -169,13 +169,13 @@
 
         <section id="b1-2-2">
             <h2>1.2.2: Out-of-Distribution Testing</h2>
-            <p>I kept the test digit and noise tensor fixed while varying σ. The 7 stays recognizable through σ = 0.6, but gains extra strokes at 0.8 and 1.0. Top: noisy inputs. Bottom: denoised outputs.</p>
+            <p>The model handles a range of noise levels pretty well, despite only training at σ = 0.5. At the highest levels, extra strokes start appearing on the 7. Noisy inputs are on top, with the outputs below.</p>
             <figure><a href="media/b_1.2.2.png"><img src="media/b_1.2.2.png" alt="Denoiser results for the same test digit at all seven noise levels" width="627" height="219"></a><figcaption>σ = 0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0</figcaption></figure>
         </section>
 
         <section id="b1-2-3">
             <h2>1.2.3: Denoising Pure Noise</h2>
-            <p>After both one and five epochs, different noise inputs produce almost the same blurry, loop-shaped digit. The noise is independent of the target image, so it gives the model no information about which digit to draw. Under MSE, the best prediction in that situation is the average MNIST image. Overlapping strokes from digits 0–9 explain the faint loops and blur.</p>
+            <p>The outputs all look like the same blurry digit, even after more training. Since the noise has nothing to do with the target, the model has no way to tell which digit it should produce. With MSE loss, it ends up predicting something close to the average MNIST image. That mixes the strokes from different digits together, giving these faint, overlapping loops.</p>
             <figure class="loss"><a href="media/b_1.2.3_loss.png"><img src="media/b_1.2.3_loss.png" alt="Pure-noise denoiser training loss over five epochs" width="779" height="290"></a><figcaption>Training loss</figcaption></figure>
             <figure><a href="media/b_1.2.3_ep1.png"><img src="media/b_1.2.3_ep1.png" alt="Pure noise and denoiser outputs after epoch 1" width="885" height="219"></a><figcaption>Epoch 1</figcaption></figure>
             <figure><a href="media/b_1.2.3_ep5.png"><img src="media/b_1.2.3_ep5.png" alt="Pure noise and nearly identical average-digit outputs after epoch 5" width="885" height="219"></a><figcaption>Epoch 5</figcaption></figure>
@@ -183,18 +183,18 @@
 
         <section id="b2-1">
             <h2>2.1: Time Conditioning</h2>
-            <p>Two fully connected time embeddings multiply the decoder features at 7×7 and 14×14. I train on interpolated noise–digit pairs to predict velocity, sampling t from a normalized 50-point grid.</p>
+            <p>I added the time embeddings to the UNet so it could learn how to move toward a digit at different points in the process.</p>
         </section>
 
         <section id="b2-2">
             <h2>2.2: Training the Time-Conditioned UNet</h2>
-            <p>Ten epochs, batch size 64, Adam starting at 0.01, and velocity MSE. The learning rate decays by <code>0.1^(1/10)</code> each epoch. The plot includes every optimizer step and a 100-step moving average.</p>
+            <p>I trained for ten epochs using the suggested settings. The loss drops quickly at first, then improves more slowly.</p>
             <figure class="loss"><a href="media/b_2.2_loss.png"><img src="media/b_2.2_loss.png" alt="Time-conditioned flow-matching training loss over ten epochs" width="790" height="290"></a><figcaption>Training loss</figcaption></figure>
         </section>
 
         <section id="b2-3">
             <h2>2.3: Sampling with Time Conditioning</h2>
-            <p>Starting from Gaussian noise, I used 50 Euler steps and seed 180 for each checkpoint. The first epoch produces broken strokes; later checkpoints produce more recognizable digits, with some ambiguous shapes remaining.</p>
+            <p>The first epoch gives a lot of broken strokes and shapes that don't quite look like digits. By epochs five and ten, more are recognizable, though a few are still hard to read.</p>
             <figure><a href="media/b_2.2_ep1.png"><img src="media/b_2.2_ep1.png" alt="Time-conditioned MNIST samples after epoch 1" width="1029" height="449"></a><figcaption>Epoch 1</figcaption></figure>
             <figure><a href="media/b_2.2_ep5.png"><img src="media/b_2.2_ep5.png" alt="Time-conditioned MNIST samples after epoch 5" width="1029" height="449"></a><figcaption>Epoch 5</figcaption></figure>
             <figure><a href="media/b_2.2_ep10.png"><img src="media/b_2.2_ep10.png" alt="Time-conditioned MNIST samples after epoch 10" width="1029" height="449"></a><figcaption>Epoch 10</figcaption></figure>
@@ -202,12 +202,12 @@
 
         <section id="b2-4">
             <h2>2.4: Class Conditioning</h2>
-            <p>I added two one-hot class embeddings: class scales the decoder features and time adds a bias. Class conditioning is dropped for 10% of training examples.</p>
+            <p>I added the digit label as another input, dropping it 10% of the time so the model could also sample without a label.</p>
         </section>
 
         <section id="b2-5">
             <h2>2.5: Training the Class-Conditioned UNet</h2>
-            <p>I used D = 64, batch size 64, Adam at 0.01, and 10 epochs. I trained two models from the same seed: one with exponential learning rate decay and one with a constant learning rate.</p>
+            <p>I trained for ten epochs, both with and without the learning rate scheduler. The two runs start from the same seed.</p>
             <div class="gallery two">
                 <figure><a href="media/b_2.5_sched_loss.png"><img src="media/b_2.5_sched_loss.png" alt="Class-conditioned training loss with an exponential scheduler" width="790" height="290"></a><figcaption>With scheduler</figcaption></figure>
                 <figure><a href="media/b_2.5_no_sched_loss.png"><img src="media/b_2.5_no_sched_loss.png" alt="Class-conditioned training loss with a constant learning rate" width="790" height="290"></a><figcaption>Without scheduler</figcaption></figure>
@@ -216,12 +216,12 @@
 
         <section id="b2-6">
             <h2>2.6: Class-Conditioned Sampling</h2>
-            <p>I sampled four instances of each digit using 300 Euler steps, seed 180, and guidance <code>v_u + 5(v_c − v_u)</code>. Columns correspond to digits 0–9. Conditioning gives much more consistent digit identities than the time-only model.</p>
+            <p>Giving the model a label makes the results much easier to read than the time-only samples. Each column shows four examples of a digit, from 0 through 9, sampled with guidance scale 5.</p>
             <figure><a href="media/b_2.6_sched_ep1.png"><img src="media/b_2.6_sched_ep1.png" alt="Four class-conditioned samples of each digit after epoch 1" width="1029" height="449"></a><figcaption>Epoch 1 · with scheduler</figcaption></figure>
             <figure><a href="media/b_2.6_sched_ep5.png"><img src="media/b_2.6_sched_ep5.png" alt="Four class-conditioned samples of each digit after epoch 5" width="1029" height="449"></a><figcaption>Epoch 5 · with scheduler</figcaption></figure>
             <figure><a href="media/b_2.6_sched_ep10.png"><img src="media/b_2.6_sched_ep10.png" alt="Four class-conditioned samples of each digit after epoch 10" width="1029" height="449"></a><figcaption>Epoch 10 · with scheduler</figcaption></figure>
             <h3>Removing the scheduler</h3>
-            <p>I removed the scheduler and kept Adam's learning rate fixed at 0.01 for all 10 epochs. The seed, architecture, batch size, and training length stayed the same. I made no further adjustment; this run still produced readable examples of all ten digits. Both loss curves fall quickly and then flatten at a similar level on the plotted scale. The final digits look comparable, with a few rough or uneven strokes in both runs.</p>
+            <p>Without the scheduler, I kept the learning rate at 0.01 for all ten epochs. I left the rest of the setup alone to see how much difference that made. The digits were still readable, so I didn't make any extra adjustments to compensate. The loss curves look similar overall, with a quick drop followed by much slower improvement. I don't see a big difference in the final digits either, though both runs have a few rough strokes.</p>
             <figure><a href="media/b_2.6_no_sched_ep10.png"><img src="media/b_2.6_no_sched_ep10.png" alt="Four samples of each digit after ten epochs without a learning rate scheduler" width="1029" height="449"></a><figcaption>Epoch 10 · no scheduler · constant learning rate 0.01</figcaption></figure>
         </section>
 
