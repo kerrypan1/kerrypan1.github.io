@@ -1,0 +1,24 @@
+body.wide { width: min(980px, calc(100% - 40px)); }
+main { padding-top: 12px; }
+a { color: var(--blue); }
+.contents { display: flex; flex-wrap: wrap; gap: 12px 24px; padding: 24px 0 12px; }
+h3 { margin: 32px 0 16px; color: var(--blue); font-size: 1.15rem; }
+section { scroll-margin-top: 24px; }
+figure { margin-bottom: 24px; }
+figure img { display: block; width: 100%; height: auto; aspect-ratio: auto; object-fit: contain; }
+.sources img { max-height: 440px; }
+.rectification { align-items: center; }
+.rectification img { max-height: 360px; }
+.matrix, .equations { margin: 12px 0 28px; padding: 16px; background: #f7f7f7; border-left: 3px solid var(--gold); overflow-x: auto; font-size: 0.8rem; line-height: 1.6; }
+.placeholder { min-height: 260px; aspect-ratio: 2 / 1; }
+.mosaic img { max-height: 760px; }
+@media print {
+    body.wide { width: 100%; font-size: 10pt; }
+    nav { display: none; }
+    header { padding: 12px 0; }
+    header h1 { font-size: 30pt; }
+    main { padding: 0; }
+    section { padding: 20px 0; }
+    figure, pre { break-inside: avoid; }
+    h2, h3 { break-after: avoid; }
+}

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Kerry Pan's CS 180 Project 4A: homographies, image rectification, and mosaics.">
+    <title>Project 4A — Image Warping and Mosaicing</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="../1/project.css">
+    <link rel="stylesheet" href="./project.css">
+</head>
+<body class="wide">
+    <nav><a href="../index.html">← Back to portfolio</a></nav>
+    <header>
+        <p>CS 180 · Project 4 · Part A</p>
+        <h1>Image Warping and Mosaicing</h1>
+    </header>
+    <nav class="contents" aria-label="Project sections">
+        <a href="#photos">Photos</a>
+        <a href="#homographies">Homographies</a>
+        <a href="#rectification">Rectification</a>
+        <a href="#mosaics">Mosaics</a>
+    </nav>
+    <main>
+        <section>
+            <h2>Overview</h2>
+            <p>I used matching points to line up pairs of photos, squared up objects seen at an angle, and blended overlapping views into mosaics.</p>
+        </section>
+
+        <section id="photos">
+            <h2>A.1: Shoot the Pictures</h2>
+            <p>These are the three pairs I used. Each has enough overlap to pick out the same details in both views.</p>
+            <h3 id="source-1">Bedroom</h3>
+            <div class="gallery two sources">
+                <figure><a href="media/1-1.jpg"><img src="media/1-1.jpg" alt="Bedroom source photo 1, showing the desk and lamp"></a><figcaption>1-1</figcaption></figure>
+                <figure><a href="media/1-2.jpg"><img src="media/1-2.jpg" alt="Bedroom source photo 2, showing the lamp and bed"></a><figcaption>1-2</figcaption></figure>
+            </div>
+            <h3 id="source-2">Living room</h3>
+            <div class="gallery two sources">
+                <figure><a href="media/2-1.jpg"><img src="media/2-1.jpg" alt="Living room source photo 1, facing the window and couch"></a><figcaption>2-1</figcaption></figure>
+                <figure><a href="media/2-2.jpg"><img src="media/2-2.jpg" alt="Living room source photo 2, facing the couch and table"></a><figcaption>2-2</figcaption></figure>
+            </div>
+            <h3 id="source-3">Study room</h3>
+            <div class="gallery two sources">
+                <figure><a href="media/3-1.jpg"><img src="media/3-1.jpg" alt="Study room source photo 3-1, with tables and ceiling flags"></a><figcaption>3-1</figcaption></figure>
+                <figure><a href="media/3-2.jpg"><img src="media/3-2.jpg" alt="Study room source photo 3-2, showing the overlapping tables and flags"></a><figcaption>3-2</figcaption></figure>
+            </div>
+        </section>
+
+        <section id="homographies">
+            <h2>A.2: Recover Homographies</h2>
+            <p>I picked 10 matching points for the bedroom, 7 for the living room, and 8 for the study room. I fixed the last entry of H to 1 and solved the remaining eight entries with <code>np.linalg.lstsq</code>.</p>
+            <p>Each match (x, y) → (u, v) contributes these two rows to <code>Ah = b</code>:</p>
+<pre class="equations">[ x  y  1  0  0  0  −ux  −uy ] h = u
+[ 0  0  0  x  y  1  −vx  −vy ] h = v
+
+h = [h11, h12, h13, h21, h22, h23, h31, h32]ᵀ</pre>
+            <h3>Bedroom · 1-1 → 1-2</h3>
+            <figure><a href="media/correspondences_1.png"><img src="media/correspondences_1.png" alt="Ten manually selected matching points marked in red on the bedroom photos" width="1200" height="600"></a><figcaption>Red dots mark the corresponding points.</figcaption></figure>
+<pre class="matrix" aria-label="Bedroom homography">H₁ = [[ 1.29807558e+00   4.40333472e-02  -2.02566865e+03]
+      [ 7.19510638e-02   1.33892138e+00  -3.75807390e+02]
+      [ 8.86365421e-05   1.87214850e-05   1.00000000e+00]]</pre>
+            <h3>Living room · 2-1 → 2-2</h3>
+            <figure><a href="media/correspondences_2.png"><img src="media/correspondences_2.png" alt="Seven matching points marked in red on the living room photos" width="1200" height="600"></a></figure>
+<pre class="matrix" aria-label="Living room homography">H₂ = [[ 1.84812751e+00   8.32003462e-02  -3.28501843e+03]
+      [ 4.89079797e-01   1.64528983e+00  -1.16165353e+03]
+      [ 2.89990407e-04  -8.00275497e-06   1.00000000e+00]]</pre>
+            <h3>Study room · 3-2 → 3-1</h3>
+            <figure><a href="media/correspondences_3.png"><img src="media/correspondences_3.png" alt="Eight matching points marked in red on the study room photos, with 3-2 on the left and 3-1 on the right" width="1200" height="600"></a></figure>
+<pre class="matrix" aria-label="Study room homography">H₃ = [[ 5.40810121e-01   2.15296136e-02   1.29930487e+03]
+      [-3.17916256e-01   8.61544918e-01   2.55924834e+02]
+      [-1.50725803e-04   2.33191408e-06   1.00000000e+00]]</pre>
+        </section>
+
+        <section id="rectification">
+            <h2>A.3: Warp the Images</h2>
+            <p>I implemented both warpers using inverse mapping. The transformed image corners give the output bounds, and each output pixel is mapped back into the source image.</p>
+            <p>For these two examples, I mapped four corners to a 300×300 square. The crops below focus on the object being squared up; clicking a result opens the full warp.</p>
+            <h3>Poster board</h3>
+            <div class="gallery three rectification">
+                <figure><a href="media/rectify1.jpg"><img src="media/poster-original.png" alt="Crop of the poster board viewed at an angle" width="310" height="400"></a><figcaption>Original · cropped</figcaption></figure>
+                <figure><a href="media/rectify_1_nearest.png"><img src="media/poster-nearest.png" alt="Poster board squared up with nearest-neighbor interpolation" width="301" height="301"></a><figcaption>Nearest neighbor</figcaption></figure>
+                <figure><a href="media/rectify_1_bilinear.png"><img src="media/poster-bilinear.png" alt="Poster board squared up with bilinear interpolation" width="301" height="301"></a><figcaption>Bilinear</figcaption></figure>
+            </div>
+            <h3>Wolf mural</h3>
+            <div class="gallery three rectification">
+                <figure><a href="media/rectify2.jpg"><img src="media/rectify2.jpg" alt="Wolf mural photographed from below" width="600" height="400"></a><figcaption>Original</figcaption></figure>
+                <figure><a href="media/rectify_2_nearest.png"><img src="media/wolf-nearest.png" alt="Wolf mural squared up with nearest-neighbor interpolation" width="301" height="301"></a><figcaption>Nearest neighbor</figcaption></figure>
+                <figure><a href="media/rectify_2_bilinear.png"><img src="media/wolf-bilinear.png" alt="Wolf mural squared up with bilinear interpolation" width="301" height="301"></a><figcaption>Bilinear</figcaption></figure>
+            </div>
+            <p>Both methods straighten the board and mural. Nearest neighbor leaves rougher edges, while bilinear looks smoother but softens small details. Nearest neighbor does less work per pixel; bilinear needs four neighbors and their weights, so the smoother result comes with more computation.</p>
+        </section>
+
+        <section id="mosaics">
+            <h2>A.4: Blend the Images into a Mosaic</h2>
+            <p>I warped one photo into the other's view and placed both on a shared canvas. In the overlap, I weighted each image by its distance from the edge, then normalized the weights. This gives a gradual transition instead of a hard cut.</p>
+            <h3>Bedroom</h3>
+            <p><a href="#source-1">Source photos: 1-1 and 1-2</a></p>
+            <figure class="mosaic"><a href="media/mosaic_1.png"><img src="media/mosaic-1-preview.jpg" alt="Bedroom mosaic with visible misalignment around the lamp"></a><figcaption>This one came out pretty rough. I was still figuring out the correspondence tool and may have misclicked a couple of points. It shows how even one or two bad matches can throw off the whole mosaic.</figcaption></figure>
+            <h3>Living room</h3>
+            <p><a href="#source-2">Source photos: 2-1 and 2-2</a></p>
+            <figure class="mosaic"><a href="media/mosaic_2.png"><img src="media/mosaic-2-preview.jpg" alt="Blended living room mosaic combining the window, couches, and table"></a><figcaption>This one lines up much better. Since it uses the same pipeline, it suggests the first result was mostly a problem with my point selection.</figcaption></figure>
+            <h3>Study room</h3>
+            <p><a href="#source-3">Source photos: 3-1 and 3-2</a></p>
+            <figure class="mosaic"><a href="media/mosaic_3.png"><img src="media/mosaic-3-preview.jpg" alt="Study room mosaic with some ghosting from movement between photos"></a><figcaption>There was some movement between these photos, so parts of the overlap don't quite match. Blending softens the seam, but it can't fix things that moved.</figcaption></figure>
+        </section>
+        <section>
+            <h2>References</h2>
+            <p><a href="https://cal-cs180.github.io/fa26/hw/proj3/partA.html">Project 4A assignment</a></p>
+        </section>
+    </main>
+    <footer><p>Kerry Pan · UC Berkeley · Fall 2026</p></footer>
+</body>
+</html>
